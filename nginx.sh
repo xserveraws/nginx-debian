@@ -103,7 +103,7 @@ NPS_VERSION=$nps_latest_version
 cd
 wget https://github.com/apache/incubator-pagespeed-ngx/archive/v${NPS_VERSION}-stable.tar.gz
 tar -xvzf v${NPS_VERSION}-stable.tar.gz
-nps_dir=$(find . -name "*pagespeed-ngx-${NPS_VERSION}-stable" -type d)
+nps_dir=$(find $HOME -name "*pagespeed-ngx-${NPS_VERSION}-stable" -type d)
 cd "$nps_dir"
 [ -e scripts/format_binary_url.sh ] && psol_url=$(scripts/format_binary_url.sh PSOL_BINARY_URL)
 wget ${psol_url}
@@ -129,7 +129,7 @@ tar -xvzf nginx-${NGINX_VERSION}.tar.gz
 #Build and install Nginx
 cd nginx-${NGINX_VERSION}/
 ./configure --add-module=$HOME/ngx_brotli \
-  --add-module=$HOME/$nps_dir \
+  --add-module=$nps_dir \
   --with-ld-opt='-ljemalloc' \
   --prefix=/etc/nginx \
   --sbin-path=/usr/sbin/nginx \
