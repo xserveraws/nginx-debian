@@ -419,6 +419,7 @@ fi
 systemctl status nginx | grep -q "active (running)"
 if [ $? -eq 0 ];then
   echo -e "\033[92m Nginx ${NGINX_VERSION} has been installed and working. \033[0m"
+  echo -e "\033[92m Cache-Purge ${NCP_VERSION} has been built. \033[0m"
   lsof -n | grep -q "jemalloc"
   if [ $? -eq 0 ];then
     echo -e "\033[92m Jemalloc ${JEMALLOC_VERSION} has been installed and load. \033[0m"
@@ -430,12 +431,6 @@ if [ $? -eq 0 ];then
     echo -e "\033[92m PageSpeed ${NPS_VERSION} has been built and load. \033[0m"
   else
     echo -e "\033[91m PageSpeed load failed. \033[0m"
-  fi
-  nginx -V | grep -q "ngx_cache_purge"
-  if [ $? -eq 0 ];then
-    echo -e "\033[92m Cache-Purge ${NCP_VERSION} has been built. \033[0m"
-  else
-    echo -e "\033[91m Cache-Purge build failed. \033[0m"
   fi
   curl -s -I -H "Accept-Encoding: br" http://localhost | grep -q "br"
   if [ $? -eq 0 ];then
