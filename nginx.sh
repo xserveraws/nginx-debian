@@ -248,6 +248,25 @@ http {
 EOF
 cp -rf /etc/nginx/nginx.conf /etc/nginx/nginx.conf.default
 cat > /etc/nginx/conf.d/default.conf << \EOF
+    # Reverse Proxy with Caching
+    #
+    #proxy_cache_path  /var/cache/nginx/proxy_cache  keys_zone=proxy_cache:10m;
+
+    #server {
+    #    listen       80;
+    #    server_name  localhost;
+
+    #location / {
+    #    proxy_pass         http://127.0.0.1:8000;
+    #    proxy_cache        proxy_cache;
+    #    proxy_cache_key    $uri$is_args$args;
+    #    }
+
+    #include /etc/nginx/extra/pagespeed.conf;
+    #include /etc/nginx/extra/cache_purge.conf;
+    #}
+
+
 server {
     listen       80;
     server_name  localhost;
@@ -293,7 +312,6 @@ server {
     #}
 
     include /etc/nginx/extra/pagespeed.conf;
-    include /etc/nginx/extra/cache_purge.conf;
 }
 
 
@@ -310,7 +328,6 @@ server {
     #    }
 
     #    include /etc/nginx/extra/pagespeed.conf;
-    #    include /etc/nginx/extra/cache_purge.conf;
     #}
 
 
@@ -335,7 +352,6 @@ server {
     #    }
 
     #    include /etc/nginx/extra/pagespeed.conf;
-    #    include /etc/nginx/extra/cache_purge.conf;
     #}
 EOF
 cp -rf /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.default
@@ -358,7 +374,7 @@ cat > /etc/nginx/extra/cache_purge.conf << \EOF
 #location ~ /purge(/.*) {
 #    allow 127.0.0.1;
 #    deny all;
-#    proxy_cache_purge tmpcache $1$is_args$args;
+#    proxy_cache_purge proxy_cache $1$is_args$args;
 #}
 EOF
 cp -rf /etc/nginx/extra/cache_purge.conf /etc/nginx/extra/cache_purge.conf.default
