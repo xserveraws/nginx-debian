@@ -1,5 +1,5 @@
 # nginx-debian
-Nginx-Debian With PageSpeed and Jemalloc and OpenSSL and Brotli
+Nginx-Debian With All Official Modules And Some Third Party Modules (Jemalloc & OpenSSL & PageSpeed & Cache-Purge & Brotli)
 
 # Usage
 ```

@@ -43,20 +43,24 @@ fi
 if [ -f "/etc/nginx/extra/pagespeed.conf" ];then
   mv -f /etc/nginx/extra/pagespeed.conf /etc/nginx/extra/pagespeed.conf_backup
 fi
+if [ -f "/etc/nginx/extra/cache_purge.conf" ];then
+  mv -f /etc/nginx/extra/cache_purge.conf /etc/nginx/extra/cache_purge.conf_backup
+fi
 
 #Download OpenSSL latest version
 openssl_download_page=$(curl -sS --fail https://www.openssl.org/source/)
 openssl_download_refs=$(echo "$openssl_download_page" | grep -o 'openssl-[a-zA-Z0-9.]*[.]tar[.]gz')
 openssl_versions_available=$(echo "$openssl_download_refs" | sed -e 's~^openssl-~~' -e 's~\.tar\.gz$~~')
 openssl_latest_version=$(echo "$openssl_versions_available" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -g | tail -n 1)
-echo "OpenSSL $openssl_latest_version"
 OPENSSL_VERSION=$openssl_latest_version
+echo "OpenSSL $OPENSSL_VERSION"
 cd
 wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
 tar -xvzf openssl-${OPENSSL_VERSION}.tar.gz
+OPENSSL_DIR=$(find $HOME -name "*openssl-${OPENSSL_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
 
 #Build and upgrade OpenSSL
-cd openssl-${OPENSSL_VERSION}
+cd $OPENSSL_DIR
 ./config shared zlib-dynamic
 make -j`nproc`
 make install -j`nproc`
@@ -76,14 +80,15 @@ jemalloc_download_page=$(curl -sS --fail https://github.com/jemalloc/jemalloc/re
 jemalloc_download_refs=$(echo "$jemalloc_download_page" | grep -o '/jemalloc-[a-zA-Z0-9.]*[.]tar[.]bz2')
 jemalloc_versions_available=$(echo "$jemalloc_download_refs" | sed -e 's~^/jemalloc-~~' -e 's~\.tar\.bz2$~~')
 jemalloc_latest_version=$(echo "$jemalloc_versions_available" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -g | tail -n 1)
-echo "Jemalloc $jemalloc_latest_version"
 JEMALLOC_VERSION=$jemalloc_latest_version
+echo "Jemalloc $JEMALLOC_VERSION"
 cd
 wget https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-${JEMALLOC_VERSION}.tar.bz2
 tar -xjvf jemalloc-${JEMALLOC_VERSION}.tar.bz2
+JEMALLOC_DIR=$(find $HOME -name "*jemalloc-${JEMALLOC_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
 
 #Build and install Jemalloc
-cd jemalloc-${JEMALLOC_VERSION}
+cd $JEMALLOC_DIR
 ./configure
 make -j`nproc`
 make install -j`nproc`
@@ -98,21 +103,34 @@ nps_download_page=$(curl -sS --fail https://github.com/apache/incubator-pagespee
 nps_download_refs=$(echo "$nps_download_page" | grep -o '/incubator-pagespeed-ngx/archive/v[a-zA-Z0-9.]*-stable[.]tar[.]gz')
 nps_versions_available=$(echo "$nps_download_refs" | sed -e 's~^/incubator-pagespeed-ngx/archive/v~~' -e 's~\-stable\.tar\.gz$~~')
 nps_latest_version=$(echo "$nps_versions_available" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -g | tail -n 1)
-echo "PageSpeed $nps_latest_version"
 NPS_VERSION=$nps_latest_version
+echo "PageSpeed $NPS_VERSION"
 cd
 wget https://github.com/apache/incubator-pagespeed-ngx/archive/v${NPS_VERSION}-stable.tar.gz
 tar -xvzf v${NPS_VERSION}-stable.tar.gz
-nps_dir=$(find $HOME -name "*pagespeed-ngx-${NPS_VERSION}-stable" -type d)
-cd "$nps_dir"
-[ -e scripts/format_binary_url.sh ] && psol_url=$(scripts/format_binary_url.sh PSOL_BINARY_URL)
-wget ${psol_url}
-tar -xzvf $(basename ${psol_url})
+NPS_DIR=$(find $HOME -name "*incubator-pagespeed-ngx-${NPS_VERSION}-stable*" -maxdepth 1 -mindepth 1 -type d)
+cd "$NPS_DIR"
+[ -e scripts/format_binary_url.sh ] && PSOL_URL=$(scripts/format_binary_url.sh PSOL_BINARY_URL)
+wget ${PSOL_URL}
+tar -xzvf $(basename ${PSOL_URL})
+
+#Download Cache-Purge latest version
+ncp_download_page=$(curl -sS --fail https://github.com/FRiCKLE/ngx_cache_purge/releases)
+ncp_download_refs=$(echo "$ncp_download_page" | grep -o '/ngx_cache_purge/archive/[a-zA-Z0-9.]*[.]tar[.]gz')
+ncp_versions_available=$(echo "$ncp_download_refs" | sed -e 's~^/ngx_cache_purge/archive/~~' -e 's~\.tar\.gz$~~')
+ncp_latest_version=$(echo "$ncp_versions_available" | sort -t '.' -k 1,1 -k 2,2 -k 3,3 -k 4,4 -g | tail -n 1)
+NCP_VERSION=$ncp_latest_version
+echo "NCP $NCP_VERSION"
+cd
+wget https://github.com/FRiCKLE/ngx_cache_purge/archive/${NCP_VERSION}.tar.gz
+tar -xvzf ${NCP_VERSION}.tar.gz
+NCP_DIR=$(find $HOME -name "*ngx_cache_purge-${NCP_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
 
 #Download Brotli latest version
 cd
 git clone https://github.com/google/ngx_brotli
-cd ngx_brotli
+NB_DIR=$(find $HOME -name "*ngx_brotli*" -type d)
+cd $NB_DIR
 git submodule update --init
 
 #Download Nginx latest version
@@ -125,13 +143,11 @@ NGINX_VERSION=$nginx_latest_version
 cd
 wget http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz
 tar -xvzf nginx-${NGINX_VERSION}.tar.gz
+NGINX_DIR=$(find $HOME -name "*nginx-${NGINX_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
 
 #Build and install Nginx
-cd nginx-${NGINX_VERSION}/
-./configure --add-module=$HOME/ngx_brotli \
-  --add-module=$nps_dir \
-  --with-ld-opt='-ljemalloc' \
-  --prefix=/etc/nginx \
+cd $NGINX_DIR
+./configure --prefix=/etc/nginx \
   --sbin-path=/usr/sbin/nginx \
   --modules-path=/usr/lib/nginx/modules \
   --conf-path=/etc/nginx/nginx.conf \
@@ -173,7 +189,11 @@ cd nginx-${NGINX_VERSION}/
   --with-mail_ssl_module \
   --with-compat \
   --with-file-aio \
-  --with-http_v2_module
+  --with-http_v2_module \
+  --with-ld-opt='-ljemalloc' \
+  --add-module=$NPS_DIR \
+  --add-module=$NCP_DIR \
+  --add-module=$NB_DIR
 make -j`nproc`
 make install -j`nproc`
 
@@ -273,6 +293,7 @@ server {
     #}
 
     include /etc/nginx/extra/pagespeed.conf;
+    include /etc/nginx/extra/cache_purge.conf;
 }
 
 
@@ -287,7 +308,9 @@ server {
     #        root   /usr/share/nginx/html;
     #        index  index.html index.htm;
     #    }
+
     #    include /etc/nginx/extra/pagespeed.conf;
+    #    include /etc/nginx/extra/cache_purge.conf;
     #}
 
 
@@ -310,7 +333,9 @@ server {
     #        root   /usr/share/nginx/html;
     #        index  index.html index.htm;
     #    }
+
     #    include /etc/nginx/extra/pagespeed.conf;
+    #    include /etc/nginx/extra/cache_purge.conf;
     #}
 EOF
 cp -rf /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.default
@@ -329,6 +354,14 @@ location ~ "^/pagespeed_static/" { }
 location ~ "^/ngx_pagespeed_beacon$" { }
 EOF
 cp -rf /etc/nginx/extra/pagespeed.conf /etc/nginx/extra/pagespeed.conf.default
+cat > /etc/nginx/extra/cache_purge.conf << \EOF
+#location ~ /purge(/.*) {
+#    allow 127.0.0.1;
+#    deny all;
+#    proxy_cache_purge tmpcache $1$is_args$args;
+#}
+EOF
+cp -rf /etc/nginx/extra/cache_purge.conf /etc/nginx/extra/cache_purge.conf.default
 
 #Start Nginx
 if [ ! -f "/etc/systemd/system/nginx.service" ];then
@@ -356,17 +389,20 @@ systemctl reload nginx
 #Remove temporary files
 rm -rf $HOME/openssl-${OPENSSL_VERSION}.tar.gz \
   $HOME/openssl-${OPENSSL_VERSION}.tar.gz.1 \
-  $HOME/openssl-${OPENSSL_VERSION} \
+  ${OPENSSL_DIR} \
   $HOME/jemalloc-${JEMALLOC_VERSION}.tar.bz2 \
   $HOME/jemalloc-${JEMALLOC_VERSION}.tar.bz2.1 \
-  $HOME/jemalloc-${JEMALLOC_VERSION} \
+  ${JEMALLOC_DIR} \
   $HOME/v${NPS_VERSION}-stable.tar.gz \
   $HOME/v${NPS_VERSION}-stable.tar.gz.1 \
-  $HOME/$nps_dir $HOME/nginx-${NGINX_VERSION} \
-  $HOME/ngx_brotli \
+  $NPS_DIR \
+  $HOME/${NCP_VERSION}.tar.gz \
+  $HOME/${NCP_VERSION}.tar.gz.1 \
+  ${NCP_DIR} \
+  ${NB_DIR} \
   $HOME/nginx-${NGINX_VERSION}.tar.gz \
   $HOME/nginx-${NGINX_VERSION}.tar.gz.1 \
-  $HOME/nginx-${NGINX_VERSION} \
+  ${NGINX_DIR} \
   /usr/lib/nginx/modules/ngx_http_geoip_module.so.old \
   /usr/lib/nginx/modules/ngx_http_image_filter_module.so.old \
   /usr/lib/nginx/modules/ngx_http_xslt_filter_module.so.old \
@@ -394,6 +430,12 @@ if [ $? -eq 0 ];then
     echo -e "\033[92m PageSpeed ${NPS_VERSION} has been built and load. \033[0m"
   else
     echo -e "\033[91m PageSpeed load failed. \033[0m"
+  fi
+  nginx -V | grep -q "ngx_cache_purge"
+  if [ $? -eq 0 ];then
+    echo -e "\033[92m Cache-Purge ${NCP_VERSION} has been built. \033[0m"
+  else
+    echo -e "\033[91m Cache-Purge build failed. \033[0m"
   fi
   curl -s -I -H "Accept-Encoding: br" http://localhost | grep -q "br"
   if [ $? -eq 0 ];then
@@ -430,9 +472,15 @@ fi
 if [ -f "/etc/nginx/extra/pagespeed.conf_backup" ];then
   mv -f /etc/nginx/extra/pagespeed.conf_backup /etc/nginx/extra/pagespeed.conf
 fi
+if [ -f "/etc/nginx/extra/cache_purge.conf_backup" ];then
+  mv -f /etc/nginx/extra/cache_purge.conf_backup /etc/nginx/extra/cache_purge.conf
+fi
 systemctl reload nginx
 echo -e "\033[93m Please enable PageSpeed in every server block of the Nginx configuration,refer to the default configuration file. \033[0m"
-echo -e "\033[94m /etc/nginx/conf.d/default.conf \033[0m"
+echo -e "\033[94m /etc/nginx/conf.d/default.conf.default \033[0m"
 echo -e "\033[94m /etc/nginx/extra/pagespeed.conf.default \033[0m"
+echo -e "\033[93m Please config Cache-Purge in every server block of the Nginx configuration,refer to the default configuration file. \033[0m"
+echo -e "\033[94m /etc/nginx/conf.d/default.conf.default \033[0m"
+echo -e "\033[94m /etc/nginx/extra/cache_purge.conf.default \033[0m"
 echo -e "\033[93m Please enable Brotli in http block of the Nginx configuration,refer to the default configuration file. \033[0m"
 echo -e "\033[94m /etc/nginx/nginx.conf.default \033[0m"
