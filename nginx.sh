@@ -428,8 +428,8 @@ EOF
 fi
 systemctl daemon-reload
 systemctl enable nginx
+systemctl stop nginx > /dev/null 2>&1
 systemctl start nginx
-systemctl reload nginx
 
 #Remove temporary files
 rm -rf $HOME/openssl-${OPENSSL_VERSION}.tar.gz \
