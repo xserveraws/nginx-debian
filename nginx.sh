@@ -429,6 +429,7 @@ fi
 systemctl daemon-reload
 systemctl enable nginx
 systemctl stop nginx > /dev/null 2>&1
+nginx -s stop > /dev/null 2>&1
 systemctl start nginx
 
 #Remove temporary files
