@@ -398,7 +398,7 @@ location ~ /purge(/.*) {
 EOF
 cp -rf /etc/nginx/extra/cache_purge.conf /etc/nginx/extra/cache_purge.conf.default
 cat > /etc/nginx/extra/brotli.conf << \EOF
-brotli_static off;
+#brotli_static off;
 brotli on;
 brotli_types "";
 brotli_buffers 16 8k;
