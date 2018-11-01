@@ -60,7 +60,7 @@ echo "OpenSSL $OPENSSL_VERSION"
 cd
 wget https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz
 tar -xvzf openssl-${OPENSSL_VERSION}.tar.gz
-OPENSSL_DIR=$(find $HOME -name "*openssl-${OPENSSL_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
+OPENSSL_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*openssl-${OPENSSL_VERSION}*")
 
 #Build and upgrade OpenSSL
 cd $OPENSSL_DIR
@@ -88,7 +88,7 @@ echo "Jemalloc $JEMALLOC_VERSION"
 cd
 wget https://github.com/jemalloc/jemalloc/releases/download/${JEMALLOC_VERSION}/jemalloc-${JEMALLOC_VERSION}.tar.bz2
 tar -xjvf jemalloc-${JEMALLOC_VERSION}.tar.bz2
-JEMALLOC_DIR=$(find $HOME -name "*jemalloc-${JEMALLOC_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
+JEMALLOC_DIR=$(find $HOME  -maxdepth 1 -mindepth 1 -type d -name "*jemalloc-${JEMALLOC_VERSION}*")
 
 #Build and install Jemalloc
 cd $JEMALLOC_DIR
@@ -113,7 +113,7 @@ echo "PageSpeed $NPS_VERSION"
 cd
 wget https://github.com/apache/incubator-pagespeed-ngx/archive/v${NPS_VERSION}-stable.tar.gz
 tar -xvzf v${NPS_VERSION}-stable.tar.gz
-NPS_DIR=$(find $HOME -name "*incubator-pagespeed-ngx-${NPS_VERSION}-stable*" -maxdepth 1 -mindepth 1 -type d)
+NPS_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*incubator-pagespeed-ngx-${NPS_VERSION}-stable*")
 cd "$NPS_DIR"
 [ -e scripts/format_binary_url.sh ] && PSOL_URL=$(scripts/format_binary_url.sh PSOL_BINARY_URL)
 wget ${PSOL_URL}
@@ -129,7 +129,7 @@ echo "NCP $NCP_VERSION"
 cd
 wget https://github.com/FRiCKLE/ngx_cache_purge/archive/${NCP_VERSION}.tar.gz
 tar -xvzf ${NCP_VERSION}.tar.gz
-NCP_DIR=$(find $HOME -name "*ngx_cache_purge-${NCP_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
+NCP_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*ngx_cache_purge-${NCP_VERSION}*")
 
 #Download Brotli latest version
 cd
@@ -148,7 +148,7 @@ NGINX_VERSION=$nginx_latest_version
 cd
 wget http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz
 tar -xvzf nginx-${NGINX_VERSION}.tar.gz
-NGINX_DIR=$(find $HOME -name "*nginx-${NGINX_VERSION}*" -maxdepth 1 -mindepth 1 -type d)
+NGINX_DIR=$(find $HOME -maxdepth 1 -mindepth 1 -type d -name "*nginx-${NGINX_VERSION}*")
 
 #Build and install Nginx
 cd $NGINX_DIR
@@ -233,7 +233,7 @@ pid        /var/run/nginx.pid;
 #load_module modules/ngx_stream_geoip_module.so;
 #load_module modules/ngx_http_perl_module.so;
 load_module modules/ngx_http_brotli_filter_module.so;
-#load_module modules/ngx_http_brotli_static_module.so;
+load_module modules/ngx_http_brotli_static_module.so;
 load_module modules/ngx_pagespeed.so;
 
 events {
@@ -398,7 +398,7 @@ location ~ /purge(/.*) {
 EOF
 cp -rf /etc/nginx/extra/cache_purge.conf /etc/nginx/extra/cache_purge.conf.default
 cat > /etc/nginx/extra/brotli.conf << \EOF
-#brotli_static off;
+brotli_static on;
 brotli on;
 brotli_types "";
 brotli_buffers 16 8k;
