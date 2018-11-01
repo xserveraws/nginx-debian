@@ -66,7 +66,7 @@ OPENSSL_DIR=$(find $HOME -name "*openssl-${OPENSSL_VERSION}*" -maxdepth 1 -minde
 cd $OPENSSL_DIR
 ./config shared zlib-dynamic
 make -j`nproc`
-make install -j`nproc`
+make install_sw -j`nproc`
 [ -f /usr/local/bin/openssl ] && rm -rf /usr/bin/openssl
 [ -d /usr/local/include/openssl ] && rm -rf /usr/include/openssl
 ln -s /usr/local/bin/openssl /usr/bin/openssl
@@ -94,7 +94,9 @@ JEMALLOC_DIR=$(find $HOME -name "*jemalloc-${JEMALLOC_VERSION}*" -maxdepth 1 -mi
 cd $JEMALLOC_DIR
 ./configure
 make -j`nproc`
-make install -j`nproc`
+make install_bin -j`nproc`
+make install_include -j`nproc`
+make install_lib -j`nproc`
 grep -q '/usr/local/lib' /etc/ld.so.conf.d/* /etc/ld.so.conf
 if [ $? -ne 0 ];then
   echo '/usr/local/lib' >> /etc/ld.so.conf.d/libc.conf
