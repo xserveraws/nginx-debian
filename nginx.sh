@@ -10,7 +10,7 @@ git curl \
 build-essential \
 xsltproc \
 uuid-dev \
-zlib1g-dev libxslt1-dev libpcre3-dev libgd-dev libgeoip-dev
+zlib1g-dev libxslt1-dev libpcre3-dev libgd-dev libgeoip-dev libperl-dev
 
 #Update CA Certificates and clean system
 update-ca-certificates
@@ -45,6 +45,9 @@ if [ -f "/etc/nginx/extra/pagespeed.conf" ];then
 fi
 if [ -f "/etc/nginx/extra/cache_purge.conf" ];then
   mv -f /etc/nginx/extra/cache_purge.conf /etc/nginx/extra/cache_purge.conf_backup
+fi
+if [ -f "/etc/nginx/extra/brotli.conf" ];then
+  mv -f /etc/nginx/extra/brotli.conf /etc/nginx/extra/brotli.conf_backup
 fi
 
 #Download OpenSSL latest version
@@ -179,21 +182,22 @@ cd $NGINX_DIR
   --with-http_image_filter_module=dynamic \
   --with-http_geoip_module=dynamic \
   --with-threads \
-  --with-stream \
+  --with-stream=dynamic \
   --with-stream_ssl_module \
   --with-stream_ssl_preread_module \
   --with-stream_realip_module \
   --with-stream_geoip_module=dynamic \
   --with-http_slice_module \
-  --with-mail \
+  --with-mail=dynamic \
   --with-mail_ssl_module \
   --with-compat \
   --with-file-aio \
   --with-http_v2_module \
+  --with-http_perl_module=dynamic \
   --with-ld-opt='-ljemalloc' \
-  --add-module=$NPS_DIR \
   --add-module=$NCP_DIR \
-  --add-module=$NB_DIR
+  --add-dynamic-module=$NPS_DIR \
+  --add-dynamic-module=$NB_DIR
 make -j`nproc`
 make install -j`nproc`
 
@@ -208,6 +212,7 @@ mkdir -p /etc/nginx/conf.d
 mkdir -p /etc/nginx/extra
 mkdir -p /usr/share/nginx/html
 chown -R nginx:nginx /usr/share/nginx/html
+ln -s /usr/lib/nginx/modules /etc/nginx/modules
 mv -f /etc/nginx/html/50x.html /usr/share/nginx/html/50x.html
 mv -f /etc/nginx/html/index.html /usr/share/nginx/html/index.html
 rm -rf /etc/nginx/html
@@ -218,6 +223,16 @@ worker_processes  1;
 error_log  /var/log/nginx/error.log warn;
 pid        /var/run/nginx.pid;
 
+#load_module modules/ngx_stream_module.so;
+#load_module modules/ngx_mail_module.so;
+#load_module modules/ngx_http_image_filter_module.so;
+#load_module modules/ngx_http_xslt_filter_module.so;
+#load_module modules/ngx_http_geoip_module.so;
+#load_module modules/ngx_stream_geoip_module.so;
+#load_module modules/ngx_http_perl_module.so;
+load_module modules/ngx_http_brotli_filter_module.so;
+#load_module modules/ngx_http_brotli_static_module.so;
+load_module modules/ngx_pagespeed.so;
 
 events {
     worker_connections  1024;
@@ -241,8 +256,6 @@ http {
 
     #gzip  on;
 
-    brotli on;
-
     include /etc/nginx/conf.d/*.conf;
 }
 EOF
@@ -264,6 +277,7 @@ cat > /etc/nginx/conf.d/default.conf << \EOF
 
     #include /etc/nginx/extra/pagespeed.conf;
     #include /etc/nginx/extra/cache_purge.conf;
+    #include /etc/nginx/extra/brotli.conf;
     #}
 
 
@@ -312,6 +326,7 @@ server {
     #}
 
     include /etc/nginx/extra/pagespeed.conf;
+    include /etc/nginx/extra/brotli.conf;
 }
 
 
@@ -328,6 +343,7 @@ server {
     #    }
 
     #    include /etc/nginx/extra/pagespeed.conf;
+    #    include /etc/nginx/extra/brotli.conf;
     #}
 
 
@@ -352,6 +368,7 @@ server {
     #    }
 
     #    include /etc/nginx/extra/pagespeed.conf;
+    #    include /etc/nginx/extra/brotli.conf;
     #}
 EOF
 cp -rf /etc/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf.default
@@ -371,13 +388,23 @@ location ~ "^/ngx_pagespeed_beacon$" { }
 EOF
 cp -rf /etc/nginx/extra/pagespeed.conf /etc/nginx/extra/pagespeed.conf.default
 cat > /etc/nginx/extra/cache_purge.conf << \EOF
-#location ~ /purge(/.*) {
-#    allow 127.0.0.1;
-#    deny all;
-#    proxy_cache_purge proxy_cache $1$is_args$args;
-#}
+location ~ /purge(/.*) {
+    allow 127.0.0.1;
+    deny all;
+    proxy_cache_purge proxy_cache $1$is_args$args;
+}
 EOF
 cp -rf /etc/nginx/extra/cache_purge.conf /etc/nginx/extra/cache_purge.conf.default
+cat > /etc/nginx/extra/brotli.conf << \EOF
+brotli_static off;
+brotli on;
+brotli_types "";
+brotli_buffers 16 8k;
+brotli_comp_level 6;
+brotli_window 512k;
+brotli_min_length 20;
+EOF
+cp -rf /etc/nginx/extra/brotli.conf /etc/nginx/extra/brotli.conf.default
 
 #Start Nginx
 if [ ! -f "/etc/systemd/system/nginx.service" ];then
@@ -419,10 +446,16 @@ rm -rf $HOME/openssl-${OPENSSL_VERSION}.tar.gz \
   $HOME/nginx-${NGINX_VERSION}.tar.gz \
   $HOME/nginx-${NGINX_VERSION}.tar.gz.1 \
   ${NGINX_DIR} \
-  /usr/lib/nginx/modules/ngx_http_geoip_module.so.old \
+  /usr/lib/nginx/modules/ngx_stream_module.so.old \
+  /usr/lib/nginx/modules/ngx_mail_module.so.old \
   /usr/lib/nginx/modules/ngx_http_image_filter_module.so.old \
   /usr/lib/nginx/modules/ngx_http_xslt_filter_module.so.old \
+  /usr/lib/nginx/modules/ngx_http_geoip_module.so.old \
   /usr/lib/nginx/modules/ngx_stream_geoip_module.so.old \
+  /usr/lib/nginx/modules/ngx_http_perl_module.so.old \
+  /usr/lib/nginx/modules/ngx_http_brotli_filter_module.so.old \
+  /usr/lib/nginx/modules/ngx_http_brotli_static_module.so.old \
+  /usr/lib/nginx/modules/ngx_pagespeed.so.old \
   /usr/sbin/nginx.old
 
 #Check Nginx status
@@ -486,12 +519,18 @@ fi
 if [ -f "/etc/nginx/extra/cache_purge.conf_backup" ];then
   mv -f /etc/nginx/extra/cache_purge.conf_backup /etc/nginx/extra/cache_purge.conf
 fi
+if [ -f "/etc/nginx/extra/brotli.conf_backup" ];then
+  mv -f /etc/nginx/extra/brotli.conf_backup /etc/nginx/extra/brotli.conf
+fi
 systemctl reload nginx
-echo -e "\033[93m Please enable PageSpeed in every server block of the Nginx configuration,refer to the default configuration file. \033[0m"
+echo -e "\033[93m Please load PageSpeed module and config PageSpeed,refer to the default configuration file. \033[0m"
+echo -e "\033[94m /etc/nginx/nginx.conf.default \033[0m"
 echo -e "\033[94m /etc/nginx/conf.d/default.conf.default \033[0m"
 echo -e "\033[94m /etc/nginx/extra/pagespeed.conf.default \033[0m"
-echo -e "\033[93m Please config Cache-Purge in every server block of the Nginx configuration,refer to the default configuration file. \033[0m"
+echo -e "\033[93m Please load Cache-Purge module and config Cache-Purge,refer to the default configuration file. \033[0m"
+echo -e "\033[94m /etc/nginx/nginx.conf.default \033[0m"
 echo -e "\033[94m /etc/nginx/conf.d/default.conf.default \033[0m"
 echo -e "\033[94m /etc/nginx/extra/cache_purge.conf.default \033[0m"
-echo -e "\033[93m Please enable Brotli in http block of the Nginx configuration,refer to the default configuration file. \033[0m"
-echo -e "\033[94m /etc/nginx/nginx.conf.default \033[0m"
+echo -e "\033[93m Please config Brotli,refer to the default configuration file. \033[0m"
+echo -e "\033[94m /etc/nginx/conf.d/default.conf.default \033[0m"
+echo -e "\033[94m /etc/nginx/extra/brotli.conf.default \033[0m"
