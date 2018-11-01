@@ -214,7 +214,9 @@ mkdir -p /etc/nginx/conf.d
 mkdir -p /etc/nginx/extra
 mkdir -p /usr/share/nginx/html
 chown -R nginx:nginx /usr/share/nginx/html
-ln -s /usr/lib/nginx/modules /etc/nginx/modules
+if [ ! -d "/etc/nginx/modules" ];then
+  ln -s /usr/lib/nginx/modules /etc/nginx/modules
+fi
 mv -f /etc/nginx/html/50x.html /usr/share/nginx/html/50x.html
 mv -f /etc/nginx/html/index.html /usr/share/nginx/html/index.html
 rm -rf /etc/nginx/html
